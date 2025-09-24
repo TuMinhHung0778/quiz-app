@@ -1,9 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import Results from "./Results";
 
 const quizData = [
   {
     question: "Biến nào sau đây là hợp lệ trong JavaScript?",
-    options: ["1variable", "_variable", "var-name", "var name2"],
+    options: ["1variable", "_variable", "var-name", "var name"],
     answer: "_variable",
   },
   {
@@ -88,68 +89,124 @@ const quizData = [
 ];
 
 const Quiz = () => {
-  // let optionSelected = "abc";
-
-  // dùng useState()
   const [optionSelected, setOptionSelected] = useState("");
-  // ==> useState return về 1 array có 2 phần tử là optionSelected và setOptionSelected, trong đó :
-  // optionSelected là giá trị hiện tại cảu state và setOptionSelected là hàm callback để đổi giá trị state, cấu trúc này gọi là array destructuring(tức là phân rã array ra thành 2 biến riêng, cấu trúc này tương tự object destructuring).
 
-  // save câu trả lời của người dùng
   const [userAnswers, setUserAnswers] = useState(
     Array.from({ length: quizData.length })
   );
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
 
-  const handleSelectedOption = (option, index) => { // code den 32:18
-    // 1. nếu không dùng useState()
+  const [isQuizEnded, setIsQuizEnded] = useState(false);
 
-    // optionSelected = option;
-    // console.log("optionSelected = " + optionSelected);
+  const [score, setScore] = useState(0);
 
-    // ==> mặc dù lúc này giá trị của optionSelected đã đổi thành nội dung của đáp án chứ không còn là giá trị abc
-    // ==> lí do là react không tự cập nhật DOM khi bạn thay đổi giá trị của biến thường
-    // ==> react chỉ cập nhật khi bạn cho nó biết là có trạng(state) thái thay đổi, nghĩa là state thay đổi
-    // ==> CÓ THỂ HIỂU LÀ :
-    // State là 1 biến đặc biệt trong react để thông báo về 1 TRẠNG THÁI của giao diện, khi state thay đổi thì react mới cập nhật UI,
-    // còn khi 1 biến thường thay đổi thì react nó không quan tâm, mặc dù có đặc biến đó ở trong html thì react nó cũng sẽ bơ luôn.
-    // => đây chính là lí do chúng cần state
+  const handleSelectedOption = (option, index) => {
+    // tính điểm
+    if (option === quizData[currentQuestion].answer) {
+      setScore((prev) => prev + 1);
+    }
 
-    // 2. dùng useState()
     setOptionSelected(option);
 
     const newUserAnswers = [...userAnswers];
-    newUserAnswers[currentQuestion] = option;
+    newUserAnswers[currentQuestion] = index;
     setUserAnswers(newUserAnswers);
   };
 
+  const goNext = () => {
+    if (currentQuestion === quizData.length - 1) {
+      setIsQuizEnded(true);
+    } else {
+      setCurrentQuestion((prev) => prev + 1);
+    }
+  };
+
+  const goBack = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion((prev) => prev - 1);
+    }
+  };
+
+  const restartQuiz = () => {
+    setCurrentQuestion(0);
+    setIsQuizEnded(false);
+    setOptionSelected("");
+    setScore(0);
+    setUserAnswers(Array.from({ length: quizData.length }));
+  };
+
+  const rewatchQuiz = () => {
+    setCurrentQuestion(0);
+    setIsQuizEnded(false);
+  };
+
+  useEffect(() => {
+    const answer = Number(userAnswers[currentQuestion]);
+    const pastOptionSelected = quizData[currentQuestion].options[answer];
+
+    if (answer !== undefined) {
+      setOptionSelected(pastOptionSelected);
+    } else {
+      setOptionSelected("");
+    }
+  }, [currentQuestion, userAnswers]);
+
+  // useEffect(() => {
+  //   if (optionSelected === quizData[currentQuestion].answer) {
+  //     setScore((prev) => prev + 1);
+  //   }
+  // }, [optionSelected]);
+
+  if (isQuizEnded) {
+    return (
+      <Results
+        score={score}
+        totalQuestionNum={quizData.length}
+        restartQuiz={restartQuiz}
+        rewatchQuiz={rewatchQuiz}
+      />
+    );
+  }
+
   return (
     <div>
-      <h2>Cau {currentQuestion + 1}</h2>
+      <h2>Câu {currentQuestion + 1}</h2>
       <p className="question">{quizData[currentQuestion].question}</p>
 
-      {quizData[currentQuestion].options.map((option) => (
+      {quizData[currentQuestion].options.map((option, index) => (
         <button
           key={option}
-          className="option"
-          onClick={() => handleSelectedOption(option)}
+          className={`option ${optionSelected === option ? "selected" : ""}`}
+          disabled={!!optionSelected && optionSelected !== option}
+          onClick={() => handleSelectedOption(option, index)}
         >
           {option}
         </button>
       ))}
 
-      {optionSelected === quizData[currentQuestion].answer ? (
-        <p className="correct-answer">Câu trả lời của bạn chính xác</p>
+      {optionSelected ? (
+        optionSelected === quizData[currentQuestion].answer ? (
+          <p className="correct-answer">Câu trả lời của bạn chính xác</p>
+        ) : (
+          <p className="incorrect-answer">Câu trả lời của bạn chưa chính xác</p>
+        )
       ) : (
-        <p className="incorrect-answer">Câu trả lời của bạn chưa chính xác</p>
+        ""
       )}
 
       <div className="nav-buttons">
-        <button>Quay Lại</button>
-        <button>Kế Tiếp</button>
+        <button onClick={goBack} disabled={currentQuestion === 0}>
+          Quay Lại
+        </button>
+        <button onClick={goNext} disabled={!optionSelected}>
+          {currentQuestion === quizData.length - 1
+            ? "Hoàn Thành Quiz"
+            : "Kế Tiếp"}
+        </button>
       </div>
     </div>
   );
 };
+
 export default Quiz;

@@ -1,9 +1,10 @@
 import Quiz from "./components/Quiz";
+import Results from "./components/Results";
 
 function App() {
   return (
     <div className="container">
-      <h1>Quiz vui lập trình</h1>
+      <h1>Quiz Vui Lập Trình</h1>
       <Quiz />
     </div>
   );
